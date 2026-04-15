@@ -1,33 +1,118 @@
 @import "tailwindcss";
 
+/* ────────────────────────────────────────────────
+   DASM Souq — Design Tokens
+   ──────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --primary: #0a5c36;
-  --primary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --border: #e2e8f0;
+  /* Brand */
+  --brand-50:  #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-200: #a7f3d0;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-800: #065f46;
+  --brand-900: #064e3b;
+
+  /* Accents */
+  --accent-orange: #f97316;
+  --accent-blue:   #3b82f6;
+  --accent-amber:  #fbbf24;
+
+  /* Neutrals */
+  --bg:        #fafafa;
+  --bg-card:   #ffffff;
+  --bg-muted:  #f1f5f9;
+  --fg:        #0f172a;
+  --fg-muted:  #64748b;
+  --fg-soft:   #94a3b8;
+  --border:    #e5e7eb;
+  --border-soft: #f1f5f9;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 2px 0 rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px -2px rgba(0,0,0,0.08);
+  --shadow-lg:  0 10px 30px -5px rgba(0,0,0,0.12);
+  --shadow-glow: 0 0 0 3px rgba(16,185,129,0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-    --muted: #1e293b;
-    --border: #334155;
+    --bg:        #09090b;
+    --bg-card:   #18181b;
+    --bg-muted:  #27272a;
+    --fg:        #fafafa;
+    --fg-muted:  #a1a1aa;
+    --fg-soft:   #71717a;
+    --border:    #27272a;
+    --border-soft: #1f1f23;
   }
 }
 
-html {
-  direction: rtl;
-}
+/* ────────────────────────────────────────────────
+   Base
+   ──────────────────────────────────────────────── */
+html { direction: rtl; scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: "Tajawal", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-feature-settings: "kern", "liga";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-.ltr {
-  direction: ltr;
+.ltr { direction: ltr; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Hide scrollbars on horizontal scrollers but keep functionality */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Focus ring */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-glow);
+  border-radius: var(--radius-sm);
+}
+
+/* Reusable utility classes */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.85);
+}
+@media (prefers-color-scheme: dark) {
+  .glass { background: rgba(24,24,27,0.85); }
+}
+
+/* Subtle pulse for live indicators */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Smooth gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-800));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card lift on hover */
+.card-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
