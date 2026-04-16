@@ -29,19 +29,20 @@ export interface CoreUser {
 export async function getAuthenticatedUser(): Promise<CoreUser | null> {
   try {
     const cookieStore = await cookies();
-    const all = cookieStore.getAll();
-    const cookieHeader = all
-      .map((c) => `${c.name}=${c.value}`)
-      .join("; ");
-
-    // Prefer Bearer token when available — it survives stateless deploys and
-    // does not require the origin to be in Sanctum's stateful list.
-    const tokenCookie = all.find((c) => c.name === "dasm_token");
+    const tokenCookie = cookieStore.get("dasm_token");
     const bearer = tokenCookie?.value
       ? decodeURIComponent(tokenCookie.value)
       : null;
 
-    if (!cookieHeader && !bearer) return null;
+    // Bearer is the only path we trust on the server. Forwarding the full
+    // browser cookie jar (laravel_session, XSRF-TOKEN, refresh_token, …)
+    // makes Sanctum classify the request as stateful when souq.dasm.com.sa
+    // is in SANCTUM_STATEFUL_DOMAINS and then reject it for missing the
+    // matching X-XSRF-TOKEN header — which surfaced today as a silent
+    // redirect loop on /publish even though the same Bearer worked from
+    // the browser. Token-only is also a smaller wire payload + simpler
+    // cache invariants on Vercel.
+    if (!bearer) return null;
 
     const h = await headers();
     const forwardedFor = h.get("x-forwarded-for");
@@ -50,17 +51,26 @@ export async function getAuthenticatedUser(): Promise<CoreUser | null> {
       method: "GET",
       headers: {
         Accept: "application/json",
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-        Origin: "https://souq.dasm.com.sa",
+        Authorization: `Bearer ${bearer}`,
+        // Origin intentionally omitted: with no Origin and no cookies,
+        // Sanctum must use the token guard, not the SPA stateful guard.
         ...(forwardedFor ? { "X-Forwarded-For": forwardedFor } : {}),
       },
       cache: "no-store",
     });
 
     if (!res.ok) return null;
-    const data = (await res.json()) as CoreUser;
-    return data?.id ? data : null;
+    const body = (await res.json().catch(() => null)) as
+      | CoreUser
+      | { data?: CoreUser }
+      | null;
+    if (!body) return null;
+    // /api/user wraps the user in `{ success: true, data: {...} }` —
+    // unwrap if needed so callers don't have to know.
+    const user = ("id" in (body as object) ? body : (body as { data?: CoreUser }).data) as
+      | CoreUser
+      | undefined;
+    return user?.id ? user : null;
   } catch {
     return null;
   }
