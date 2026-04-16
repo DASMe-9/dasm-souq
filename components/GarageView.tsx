@@ -62,7 +62,21 @@ export default function GarageView({ garage }: Props) {
         <DecideDestinationModal
           carId={decideCar.id}
           carLabel={decideCar.title}
-          prefillPrices={{ fixed_price: decideCar.price ?? null }}
+          prefillPrices={{
+            fixed_price: decideCar.price ?? null,
+            min_price: decideCar.destinations.auction.min_price ?? null,
+            max_price: decideCar.destinations.auction.max_price ?? null,
+          }}
+          currentState={{
+            inSouq: decideCar.destinations.souq_listing.active,
+            inAuction: decideCar.destinations.auction.active,
+            souqListingId: decideCar.destinations.souq_listing.listing_id,
+            souqViews: decideCar.destinations.souq_listing.views,
+            souqFavorites: decideCar.destinations.souq_listing.favorites,
+            souqPublishedAt: decideCar.destinations.souq_listing.published_at,
+            auctionEndsAt: decideCar.destinations.auction.ends_at,
+            auctionStartsAt: decideCar.destinations.auction.starts_at,
+          }}
           onClose={() => setDecideCar(null)}
           onSuccess={() => {
             if (typeof window !== "undefined") window.location.reload();

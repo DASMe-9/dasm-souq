@@ -41,10 +41,25 @@ interface PrefillPrices {
   fixed_price?: string | number | null;
 }
 
+/** Current destination state of the car — drives the status banner,
+ *  active badges, and submit-button wording. Fed by GarageView from
+ *  /api/me/garage. See DASM-Platform version for reference. */
+interface CurrentState {
+  inSouq: boolean;
+  inAuction: boolean;
+  souqListingId?: string | null;
+  souqViews?: number;
+  souqFavorites?: number;
+  souqPublishedAt?: string | null;
+  auctionEndsAt?: string | null;
+  auctionStartsAt?: string | null;
+}
+
 interface Props {
   carId: number;
   carLabel: string;
   prefillPrices?: PrefillPrices;
+  currentState?: CurrentState;
   onClose: () => void;
   onSuccess?: (which: ListingType) => void;
 }
@@ -80,6 +95,7 @@ export default function DecideDestinationModal({
   carId,
   carLabel,
   prefillPrices,
+  currentState,
   onClose,
   onSuccess,
 }: Props) {
@@ -87,6 +103,10 @@ export default function DecideDestinationModal({
   const [listingType, setListingType] = useState<ListingType | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const inSouq = currentState?.inSouq ?? false;
+  const inAuction = currentState?.inAuction ?? false;
+  const isIdle = !inSouq && !inAuction;
 
   // Auction fields
   const [duration, setDuration] = useState("10");
@@ -225,8 +245,67 @@ export default function DecideDestinationModal({
         {/* Step: choose */}
         {step === "choose" && (
           <div className="p-5 space-y-3">
+            {/* Status banner — see DASM-Platform version for rationale */}
+            {inAuction && (
+              <div className="rounded-xl border border-[var(--brand-500)]/30 bg-[var(--brand-50)] p-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <Gavel className="w-4 h-4 mt-0.5 shrink-0 text-[var(--brand-700)]" />
+                  <div className="flex-1">
+                    <div className="font-bold text-[var(--fg)]">
+                      السيارة الآن في المزاد
+                    </div>
+                    {currentState?.auctionEndsAt && (
+                      <div className="text-xs text-[var(--fg-muted)] mt-0.5">
+                        ينتهي:{" "}
+                        {new Date(currentState.auctionEndsAt).toLocaleString(
+                          "ar-SA",
+                          { dateStyle: "medium", timeStyle: "short" },
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {inSouq && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-50 p-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <Store className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
+                  <div className="flex-1">
+                    <div className="font-bold text-[var(--fg)]">
+                      السيارة منشورة في سوق داسم
+                    </div>
+                    <div className="text-xs text-[var(--fg-muted)] mt-0.5">
+                      {currentState?.souqViews != null && (
+                        <span>{currentState.souqViews} مشاهدة</span>
+                      )}
+                      {currentState?.souqFavorites != null && (
+                        <span> · {currentState.souqFavorites} حفظ</span>
+                      )}
+                    </div>
+                  </div>
+                  {currentState?.souqListingId && (
+                    <a
+                      href={`/listings/${currentState.souqListingId}`}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800"
+                    >
+                      عرض ↗
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
             <p className="text-sm text-[var(--fg-muted)] mb-2">
-              اختر وجهة سيارتك <b className="text-[var(--fg)]">{carLabel}</b> للنشر:
+              {isIdle ? (
+                <>
+                  اختر وجهة سيارتك <b className="text-[var(--fg)]">{carLabel}</b> للنشر:
+                </>
+              ) : (
+                <>
+                  ماذا تريد أن تفعل بسيارتك <b className="text-[var(--fg)]">{carLabel}</b>؟
+                </>
+              )}
             </p>
 
             <button
@@ -234,15 +313,31 @@ export default function DecideDestinationModal({
                 setListingType("auction");
                 setStep("details");
               }}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[var(--border)] hover:border-[var(--brand-500)] hover:bg-[var(--brand-50)] transition-all text-right"
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-right ${
+                inAuction
+                  ? "border-[var(--brand-500)] bg-[var(--brand-50)]"
+                  : "border-[var(--border)] hover:border-[var(--brand-500)] hover:bg-[var(--brand-50)]"
+              }`}
             >
               <div className="w-12 h-12 rounded-xl bg-[var(--brand-100)] grid place-items-center shrink-0">
                 <Gavel className="w-6 h-6 text-[var(--brand-700)]" />
               </div>
               <div className="flex-1">
-                <div className="font-bold text-[var(--fg)]">المزاد</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-bold text-[var(--fg)]">المزاد</div>
+                  {inAuction && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[var(--brand-600)] text-white text-[10px] font-bold">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      الوجهة الحالية
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-[var(--fg-muted)] mt-0.5">
-                  ادخل سيارتك في مزاد بمدة وتاريخ بدء تحدّدهما أنت.
+                  {inAuction
+                    ? "تعديل إعدادات المزاد الحالي — المدة، الأسعار، تاريخ البدء."
+                    : inSouq
+                      ? "نقل السيارة من سوق داسم إلى المزاد. سيتوقف الإعلان تلقائياً."
+                      : "ادخل سيارتك في مزاد بمدة وتاريخ بدء تحدّدهما أنت."}
                 </div>
               </div>
             </button>
@@ -252,18 +347,45 @@ export default function DecideDestinationModal({
                 setListingType("classified");
                 setStep("details");
               }}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[var(--border)] hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-right ${
+                inSouq
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-[var(--border)] hover:border-emerald-500 hover:bg-emerald-50"
+              }`}
             >
               <div className="w-12 h-12 rounded-xl bg-emerald-100 grid place-items-center shrink-0">
                 <Store className="w-6 h-6 text-emerald-600" />
               </div>
               <div className="flex-1">
-                <div className="font-bold text-[var(--fg)]">سوق داسم</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-bold text-[var(--fg)]">سوق داسم</div>
+                  {inSouq && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      الوجهة الحالية
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-[var(--fg-muted)] mt-0.5">
-                  اعرض سيارتك بسعر ثابت في سوق داسم — منصة الإعلانات المبوّبة.
+                  {inSouq
+                    ? "تعديل إعدادات الإعلان الحالي — السعر الثابت."
+                    : inAuction
+                      ? "نقل السيارة من المزاد إلى سوق داسم. سيتم إلغاء المزاد الحالي."
+                      : "اعرض سيارتك بسعر ثابت في سوق داسم — منصة الإعلانات المبوّبة."}
                 </div>
               </div>
             </button>
+
+            {!isIdle && (
+              <div className="rounded-xl border border-amber-400/40 bg-amber-50 p-3 text-xs text-amber-900 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  {inAuction
+                    ? "عند اختيار سوق داسم، سيتم إلغاء المزاد الحالي تلقائياً — إن كان عليه مزايدون فسيُخطرون."
+                    : "عند اختيار المزاد، سيتوقف الإعلان الحالي تلقائياً من سوق داسم."}
+                </span>
+              </div>
+            )}
 
             <button
               onClick={onClose}
@@ -420,7 +542,17 @@ export default function DecideDestinationModal({
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white font-bold text-sm disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
-                {submitting ? "جاري النشر..." : "تأكيد — أدخل المزاد"}
+                {submitting
+                  ? inAuction
+                    ? "جارٍ التحديث..."
+                    : inSouq
+                      ? "جارٍ النقل..."
+                      : "جارٍ النشر..."
+                  : inAuction
+                    ? "تأكيد — حفظ التعديلات"
+                    : inSouq
+                      ? "تأكيد — انقل إلى المزاد"
+                      : "تأكيد — أدخل المزاد"}
               </button>
             </div>
           </div>
@@ -473,7 +605,17 @@ export default function DecideDestinationModal({
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Store className="w-4 h-4" />}
-                {submitting ? "جاري النشر..." : "تأكيد — أعلن في سوق داسم"}
+                {submitting
+                  ? inSouq
+                    ? "جارٍ التحديث..."
+                    : inAuction
+                      ? "جارٍ النقل..."
+                      : "جارٍ النشر..."
+                  : inSouq
+                    ? "تأكيد — حفظ التعديلات"
+                    : inAuction
+                      ? "تأكيد — انقل إلى سوق داسم"
+                      : "تأكيد — أعلن في سوق داسم"}
               </button>
             </div>
           </div>
