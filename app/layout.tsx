@@ -1,7 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { AuthSessionProvider } from "@/components/AuthSession";
 import { getAuthenticatedUser } from "@/lib/auth";
+
+const TALK_WIDGET_URL =
+  process.env.NEXT_PUBLIC_TALK_WIDGET_URL ||
+  "https://talk.dasm.com.sa/widget.js";
 
 export const metadata: Metadata = {
   title: {
@@ -44,6 +49,16 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         <AuthSessionProvider initialUser={user}>{children}</AuthSessionProvider>
+        {/*
+         * DASM Talk widget — one unified chat pill across the منظومة.
+         * Same cookie domain (.dasm.com.sa) means the widget auto-detects
+         * the signed-in user without a separate login.
+         */}
+        <Script
+          src={TALK_WIDGET_URL}
+          strategy="afterInteractive"
+          data-dasm-source="souq"
+        />
       </body>
     </html>
   );

@@ -4,13 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Image as ImageIcon,
-  Plus,
-  X,
   Check,
   Loader2,
   Gavel,
   AlertTriangle,
 } from "lucide-react";
+import ImageUploader from "@/components/ImageUploader";
 
 interface Section {
   id: number;
@@ -43,7 +42,7 @@ export default function PublishForm({ sections, regions }: Props) {
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [areaCode, setAreaCode] = useState<string>("");
   const [city, setCity] = useState("");
-  const [imageUrls, setImageUrls] = useState<string[]>([""]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isAuctionable, setIsAuctionable] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -51,17 +50,6 @@ export default function PublishForm({ sections, regions }: Props) {
 
   const selectedSection = sections.find((s) => s.id === sectionId);
   const region = regions.find((r) => r.code === areaCode);
-
-  const addImageSlot = () => {
-    if (imageUrls.length < MAX_IMAGES) setImageUrls([...imageUrls, ""]);
-  };
-  const removeImage = (i: number) =>
-    setImageUrls(imageUrls.filter((_, idx) => idx !== i));
-  const setImageAt = (i: number, v: string) => {
-    const next = [...imageUrls];
-    next[i] = v;
-    setImageUrls(next);
-  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,9 +64,7 @@ export default function PublishForm({ sections, regions }: Props) {
       return;
     }
 
-    const cleanImages = imageUrls
-      .map((u) => u.trim())
-      .filter((u) => /^https?:\/\/\S+/.test(u));
+    const cleanImages = imageUrls.filter((u) => /^https?:\/\/\S+/.test(u));
 
     const payload = {
       title: title.trim(),
@@ -225,46 +211,16 @@ export default function PublishForm({ sections, regions }: Props) {
       <div>
         <label className="block text-sm font-bold mb-2">
           <ImageIcon className="inline w-4 h-4 ml-1 -mt-0.5" />
-          روابط الصور
-          <span className="text-xs font-normal text-[var(--fg-muted)] mr-2">
-            ({imageUrls.filter((u) => u.trim()).length}/{MAX_IMAGES})
-          </span>
+          صور الإعلان
         </label>
-        <div className="space-y-2">
-          {imageUrls.map((url, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setImageAt(i, e.target.value)}
-                placeholder="https://..."
-                className="input flex-1"
-              />
-              {imageUrls.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeImage(i)}
-                  className="w-9 h-9 rounded-lg border border-[var(--border)] hover:bg-red-50 hover:text-red-600 hover:border-red-300 grid place-items-center transition"
-                  aria-label="إزالة"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        {imageUrls.length < MAX_IMAGES && (
-          <button
-            type="button"
-            onClick={addImageSlot}
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--brand-700)] hover:underline"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            إضافة صورة
-          </button>
-        )}
+        <ImageUploader
+          urls={imageUrls}
+          onChange={setImageUrls}
+          maxFiles={MAX_IMAGES}
+          disabled={submitting}
+        />
         <p className="text-xs text-[var(--fg-soft)] mt-2">
-          ارفع صورك على Cloudinary أو أي خدمة عامة وضع الرابط هنا. دعم الرفع المباشر قريباً.
+          الصور تُرفع مباشرة وتُحفظ على Cloudinary. أول صورة هي الغلاف الذي يراه المشتري أولاً.
         </p>
       </div>
 
