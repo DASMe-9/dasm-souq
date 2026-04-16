@@ -36,8 +36,10 @@ export default async function PublishPage({
 
   const raw = await searchParams;
   const typeParam = Array.isArray(raw.type) ? raw.type[0] : raw.type;
+  // /api/marketplace/sections only returns active sections, so a slug
+  // match is sufficient — no is_active check needed here.
   const preSelected = typeParam
-    ? sections.find((s) => s.slug === typeParam && s.is_active)
+    ? sections.find((s) => s.slug === typeParam)
     : undefined;
 
   return (

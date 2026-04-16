@@ -10,7 +10,15 @@ import {
   Package,
   Rabbit,
 } from "lucide-react";
-import type { MarketSection } from "@/lib/api";
+/** Slim section shape shared with fetchCoreSections() in lib/auth.
+ *  The API endpoint filters to active sections server-side, so this
+ *  component doesn't need an is_active field. */
+interface PickerSection {
+  id: number;
+  slug: string;
+  name_ar: string;
+  icon: string | null;
+}
 
 /**
  * Haraj-style "choose what you're listing" step.
@@ -89,7 +97,7 @@ const FALLBACK_COPY: RowCopy = {
   accent: "bg-slate-500/10 text-slate-500",
 };
 
-function copyFor(section: MarketSection): RowCopy {
+function copyFor(section: PickerSection): RowCopy {
   return SECTION_COPY[section.slug] ?? {
     ...FALLBACK_COPY,
     label: `إعلان في ${section.name_ar}`,
@@ -99,10 +107,8 @@ function copyFor(section: MarketSection): RowCopy {
 export default function PublishCategoryPicker({
   sections,
 }: {
-  sections: MarketSection[];
+  sections: PickerSection[];
 }) {
-  const activeSections = sections.filter((s) => s.is_active);
-
   return (
     <div dir="rtl">
       <h1 className="text-2xl sm:text-3xl font-extrabold mb-1">
@@ -110,14 +116,14 @@ export default function PublishCategoryPicker({
       </h1>
       <p className="text-sm text-[var(--fg-muted)] mb-6">اختر نوع الإعلان</p>
 
-      {activeSections.length === 0 ? (
+      {sections.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-10 text-center text-[var(--fg-muted)]">
           لا توجد أقسام مفعّلة حالياً. عُد قريباً.
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
           <ul className="divide-y divide-[var(--border-soft)]">
-            {activeSections.map((s) => {
+            {sections.map((s) => {
               const c = copyFor(s);
               const Icon = c.icon;
               return (
