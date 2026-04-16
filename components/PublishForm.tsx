@@ -13,6 +13,8 @@ import {
   Sparkles,
   X,
   Car,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import ImageUploader from "@/components/ImageUploader";
 
@@ -112,6 +114,15 @@ export default function PublishForm({ sections, regions, userName }: Props) {
   const region = regions.find((r) => r.code === areaCode);
   const isVehicleSection =
     !!selectedSection && VEHICLE_SECTIONS.has(selectedSection.slug);
+
+  // Cars (and specialized vehicles) live in Core's `cars` table — that is the
+  // source of truth the dashboard, the auctions engine, and every other DASM
+  // surface read from. Souq must not create a parallel "car" record. Instead
+  // we send the seller to the canonical add-car form on dasm.com.sa, then the
+  // dashboard becomes the place to decide: publish as listing / push to
+  // auction / both. This keeps a single source of truth and matches the
+  // ecosystem map (Core owns the entity, Services owns the display card).
+  const CORE_ADD_CAR_URL = "https://www.dasm.com.sa/dashboard/add-car";
 
   // ─── Remember-last: load on mount ────────────────────────────────
   const hasLoadedStorage = useRef(false);
@@ -395,6 +406,20 @@ export default function PublishForm({ sections, regions, userName }: Props) {
           </select>
         </Field>
 
+        {/* Cars route — entity lives in Core, not in souq.
+            When the user picks a car section, hide the souq form entirely
+            and show a single clean call-to-action that takes them to the
+            canonical add-car page on dasm.com.sa. The dashboard is where
+            they later choose: list in souq / push to auction / both. */}
+        {isVehicleSection && (
+          <CarRedirectCard
+            sectionName={selectedSection?.name_ar ?? "السيارات"}
+            url={CORE_ADD_CAR_URL}
+          />
+        )}
+
+        {!isVehicleSection && (
+          <>
         {/* Title */}
         <Field label="عنوان الإعلان" required>
           <input
@@ -670,6 +695,8 @@ export default function PublishForm({ sections, regions, userName }: Props) {
             إلغاء والرجوع للرئيسية
           </a>
         </div>
+          </>
+        )}
 
         <style jsx>{`
           .input {
@@ -718,6 +745,69 @@ export default function PublishForm({ sections, regions, userName }: Props) {
         />
       )}
     </>
+  );
+}
+
+function CarRedirectCard({
+  sectionName,
+  url,
+}: {
+  sectionName: string;
+  url: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--brand-200)] bg-gradient-to-br from-[var(--brand-50)] to-[var(--bg-card)] p-5 sm:p-6 space-y-4">
+      <div className="flex items-start gap-3">
+        <div className="w-12 h-12 rounded-xl bg-[var(--brand-600)] text-white grid place-items-center shrink-0 shadow-md">
+          <Car className="w-6 h-6" />
+        </div>
+        <div>
+          <div className="font-extrabold text-[var(--fg)] text-base">
+            {sectionName} تُضاف من داسم الأم
+          </div>
+          <p className="text-sm text-[var(--fg-muted)] mt-1 leading-relaxed">
+            السيارات (والمركبات المتخصصة) تعيش في سجل واحد على{" "}
+            <b>dasm.com.sa</b> — منه يقرّر مالك السيارة من لوحته:{" "}
+            <span className="whitespace-nowrap">📍 نشر إعلان</span>،{" "}
+            <span className="whitespace-nowrap">🔨 طرح للمزاد</span>، أو{" "}
+            <span className="whitespace-nowrap">الاثنين معاً</span>.
+          </p>
+        </div>
+      </div>
+
+      <ul className="space-y-1.5 text-xs text-[var(--fg-muted)]">
+        <li className="flex items-start gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-[var(--brand-600)] mt-0.5 shrink-0" />
+          <span>سجل واحد للسيارة في كل المنظومة — لا تكرار، لا تعارض.</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-[var(--brand-600)] mt-0.5 shrink-0" />
+          <span>OCR استمارة + ماركات حسب السوق + فحص دوري + فيديو + تقارير.</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-[var(--brand-600)] mt-0.5 shrink-0" />
+          <span>
+            بعد الإضافة، تظهر سيارتك في لوحتك ويمكنك نشرها هنا في سوق داسم بضغطة.
+          </span>
+        </li>
+      </ul>
+
+      <div className="flex flex-col sm:flex-row gap-2 pt-2">
+        <a
+          href={url}
+          className="flex-1 inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white font-bold text-sm shadow-md transition"
+        >
+          أضِف سيارتك من داسم الأم
+          <ExternalLink className="w-4 h-4" />
+        </a>
+        <a
+          href="/"
+          className="inline-flex items-center justify-center h-12 px-5 rounded-xl border border-[var(--border)] hover:bg-[var(--bg-muted)] text-sm font-semibold transition"
+        >
+          إلغاء
+        </a>
+      </div>
+    </div>
   );
 }
 
