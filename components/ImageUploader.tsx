@@ -35,11 +35,25 @@ function formatBytes(n: number) {
 
 function readToken(): string | null {
   if (typeof window === "undefined") return null;
+  // Prefer localStorage (set synchronously by the login flow). Fall back to
+  // the `dasm_token` cookie — same value, different storage — in case
+  // localStorage was cleared by an extension / privacy mode.
   try {
-    return localStorage.getItem("dasm_token");
+    const fromLs = localStorage.getItem("dasm_token");
+    if (fromLs) return fromLs;
   } catch {
-    return null;
+    /* ignore */
   }
+  try {
+    const match = document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("dasm_token="));
+    if (match) return decodeURIComponent(match.slice("dasm_token=".length));
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 function postWithProgress(
@@ -53,7 +67,13 @@ function postWithProgress(
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${API_URL}/upload/media`, true);
-    xhr.withCredentials = true;
+    // IMPORTANT: don't send cookies with the upload. With credentials on +
+    // Origin=souq.dasm.com.sa, Laravel's Sanctum EnsureFrontendRequestsAreStateful
+    // middleware classifies the request as stateful (since souq is in
+    // SANCTUM_STATEFUL_DOMAINS) and then rejects the POST for missing the
+    // X-XSRF-TOKEN header — the user sees "يجب تسجيل الدخول للوصول لهذا المورد"
+    // even with a perfectly valid Bearer. Bearer-only forces the token guard.
+    xhr.withCredentials = false;
     xhr.setRequestHeader("Accept", "application/json");
     const token = readToken();
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
