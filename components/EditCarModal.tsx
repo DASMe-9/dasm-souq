@@ -393,8 +393,13 @@ export default function EditCarModal({ carId, onClose, onSaved }: Props) {
                 </Field>
               </div>
 
-              {/* Pricing */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[var(--border-soft)] pt-4">
+              {/* Pricing — only the fixed (classified) price here. The
+                  auction min/max are intentionally NOT shown: they belong
+                  to the destination decision flow ('قرّر الوجهة' modal),
+                  not to the basic car-data edit. The values are still
+                  loaded from the GET and re-sent on PUT untouched, so we
+                  never lose them by editing other fields. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-[var(--border-soft)] pt-4">
                 <Field label="السعر الثابت (ر.س)">
                   <input
                     className="input tabular-nums"
@@ -404,28 +409,6 @@ export default function EditCarModal({ carId, onClose, onSaved }: Props) {
                     value={fixedPrice}
                     onChange={(e) => setFixedPrice(e.target.value)}
                     placeholder="85000"
-                  />
-                </Field>
-                <Field label="حد أدنى للمزاد">
-                  <input
-                    className="input tabular-nums"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="50000"
-                  />
-                </Field>
-                <Field label="حد أعلى للمزاد">
-                  <input
-                    className="input tabular-nums"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="80000"
                   />
                 </Field>
               </div>
