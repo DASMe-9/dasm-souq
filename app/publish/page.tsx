@@ -10,9 +10,10 @@ export const dynamic = "force-dynamic";
 export default async function PublishPage() {
   const user = await getAuthenticatedUser();
   if (!user) {
-    redirect(
-      "https://www.dasm.com.sa/auth/login?redirect=https://souq.dasm.com.sa/publish",
-    );
+    // Keep the user inside سوق داسم — no bounce to the parent domain.
+    // The Sanctum session cookie is shared across `.dasm.com.sa`, so after
+    // they log in here they're signed in everywhere in منظومة داسم.
+    redirect("/auth/login?returnUrl=/publish");
   }
 
   const [sections, regions] = await Promise.all([

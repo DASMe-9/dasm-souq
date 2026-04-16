@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AuthSessionProvider } from "@/components/AuthSession";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: {
@@ -25,9 +27,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Resolve the authenticated user on the server once so the first paint
+  // already knows who's logged in — no flash of signed-out UI.
+  const user = await getAuthenticatedUser();
+
   return (
     <html lang="ar" dir="rtl">
       <head>
@@ -36,7 +42,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <AuthSessionProvider initialUser={user}>{children}</AuthSessionProvider>
+      </body>
     </html>
   );
 }
