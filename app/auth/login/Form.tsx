@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { AlertCircle, Eye, EyeOff, LogIn } from "lucide-react";
 import { loginWithPassword } from "@/lib/auth-client";
 
 export default function LoginForm({ returnUrl }: { returnUrl: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,14 +21,24 @@ export default function LoginForm({ returnUrl }: { returnUrl: string }) {
     const result = await loginWithPassword(email.trim(), password);
 
     if (result.success) {
-      // Let the server re-render with the fresh session.
-      router.push(returnUrl);
-      router.refresh();
+      // Hard-navigate to make absolutely sure the server-side auth bridge
+      // sees the freshly-set .dasm.com.sa session cookie + our dasm_token
+      // cookie. `router.push` + `router.refresh` sometimes hits a stale RSC
+      // cache on Next.js 16 and bounces the user back to /auth/login,
+      // which looks like "the button does nothing" to the user.
+      if (typeof window !== "undefined") {
+        window.location.replace(returnUrl || "/");
+      }
       return;
     }
 
     setError(result.error || "فشل تسجيل الدخول");
     setLoading(false);
+    // Scroll the error into view on small screens, where the alert can
+    // otherwise sit above the keyboard and be missed entirely.
+    requestAnimationFrame(() => {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   return (
@@ -46,7 +55,9 @@ export default function LoginForm({ returnUrl }: { returnUrl: string }) {
 
       {error && (
         <div
+          ref={errorRef}
           role="alert"
+          aria-live="polite"
           className="mb-4 flex gap-2 items-start p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-sm"
         >
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />

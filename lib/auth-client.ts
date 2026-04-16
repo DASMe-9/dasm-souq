@@ -106,6 +106,14 @@ export async function loginWithPassword(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok || data?.status === "error") {
+      if (res.status === 429) {
+        const retry = res.headers.get("retry-after");
+        const secs = retry ? parseInt(retry, 10) : 60;
+        return {
+          success: false,
+          error: `محاولات كثيرة — انتظر ${Number.isFinite(secs) && secs > 0 ? secs : 60} ثانية ثم حاول مرة أخرى.`,
+        };
+      }
       if (data?.message === "Email not verified") {
         return {
           success: false,
@@ -160,6 +168,14 @@ export async function registerUser(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok || data?.status === "error") {
+      if (res.status === 429) {
+        const retry = res.headers.get("retry-after");
+        const secs = retry ? parseInt(retry, 10) : 60;
+        return {
+          success: false,
+          error: `محاولات كثيرة — انتظر ${Number.isFinite(secs) && secs > 0 ? secs : 60} ثانية ثم حاول مرة أخرى.`,
+        };
+      }
       const msg =
         extractFirstValidationError(data?.errors) ||
         data?.message ||
