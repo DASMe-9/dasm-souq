@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Car as CarIcon,
   Gavel,
@@ -13,6 +14,7 @@ import {
   Compass,
 } from "lucide-react";
 import type { GarageData, GarageCar } from "@/lib/garage";
+import DecideDestinationModal from "@/components/DecideDestinationModal";
 
 interface Props {
   garage: GarageData | null;
@@ -20,6 +22,11 @@ interface Props {
 }
 
 export default function GarageView({ garage }: Props) {
+  // Lift the decide-modal state so it lives ABOVE the cards. The modal opens
+  // INSIDE souq (no navigation) and posts directly to api.dasm.com.sa using
+  // the user's Bearer token.
+  const [decideCar, setDecideCar] = useState<GarageCar | null>(null);
+
   if (!garage) {
     return (
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-8 text-center">
@@ -40,9 +47,22 @@ export default function GarageView({ garage }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {garage.cars.map((car) => (
-          <CarCard key={car.id} car={car} />
+          <CarCard key={car.id} car={car} onDecide={() => setDecideCar(car)} />
         ))}
       </div>
+
+      {decideCar && (
+        <DecideDestinationModal
+          carId={decideCar.id}
+          carLabel={decideCar.title}
+          prefillPrices={{ fixed_price: decideCar.price ?? null }}
+          onClose={() => setDecideCar(null)}
+          onSuccess={() => {
+            // Reload to reflect the new destination state.
+            if (typeof window !== "undefined") window.location.reload();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -78,7 +98,7 @@ function SummaryStrip({ summary }: { summary: GarageData["summary"] }) {
 
 // ─── Single car card ───────────────────────────────────
 
-function CarCard({ car }: { car: GarageCar }) {
+function CarCard({ car, onDecide }: { car: GarageCar; onDecide: () => void }) {
   const inSouq = car.destinations.souq_listing.active;
   const inAuction = car.destinations.auction.active;
   const priceLabel = car.price
@@ -165,18 +185,17 @@ function CarCard({ car }: { car: GarageCar }) {
 
         {/* Actions */}
         <div className="mt-auto pt-4 space-y-2">
-          {/* Primary action: decide destination — auction / market / both.
-              Deep-links into the canonical DecideListingModal on
-              dasm.com.sa/dashboard/mycars (so souq doesn't duplicate the
-              modal logic). The destination page reads ?decide=<id> and
-              auto-opens the modal for this car. */}
-          <a
-            href={`https://www.dasm.com.sa/dashboard/mycars?decide=${car.id}`}
+          {/* Primary action: decide destination — opens the modal IN PLACE
+              (no navigation). The modal posts directly to api.dasm.com.sa
+              using the seller's Bearer token. */}
+          <button
+            type="button"
+            onClick={onDecide}
             className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[var(--accent-orange)] hover:opacity-90 text-white text-xs font-bold transition"
           >
             <Compass className="w-3.5 h-3.5" />
             قرّر الوجهة
-          </a>
+          </button>
 
           <div className="flex gap-2">
             {inSouq && car.destinations.souq_listing.listing_id && (
