@@ -61,9 +61,10 @@ function CategoryCard({ section, index }: { section: MarketSection; index: numbe
         style={{ background: accent.glow }}
       />
 
-      {/* Icon tile */}
+      {/* Icon tile — shrunk 2026-04-16 per owner request so the
+          category card feels lighter and less ornamental. */}
       <div
-        className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl grid place-items-center text-2xl sm:text-3xl mb-3 shadow-md"
+        className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl grid place-items-center text-lg sm:text-xl mb-2 shadow-sm"
         style={{ background: `linear-gradient(135deg, ${accent.from}, ${accent.to})` }}
       >
         <span className="filter drop-shadow-sm">{section.icon ?? "📦"}</span>
