@@ -10,6 +10,7 @@ import {
   Pencil,
   CheckCircle2,
   Pause,
+  Compass,
 } from "lucide-react";
 import type { GarageData, GarageCar } from "@/lib/garage";
 
@@ -163,23 +164,38 @@ function CarCard({ car }: { car: GarageCar }) {
         )}
 
         {/* Actions */}
-        <div className="mt-auto pt-4 flex gap-2">
-          {inSouq && car.destinations.souq_listing.listing_id && (
-            <a
-              href={`/listings/${car.destinations.souq_listing.listing_id}`}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white text-xs font-bold transition"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              عرض البطاقة
-            </a>
-          )}
+        <div className="mt-auto pt-4 space-y-2">
+          {/* Primary action: decide destination — auction / market / both.
+              Deep-links into the canonical DecideListingModal on
+              dasm.com.sa/dashboard/mycars (so souq doesn't duplicate the
+              modal logic). The destination page reads ?decide=<id> and
+              auto-opens the modal for this car. */}
           <a
-            href={`https://www.dasm.com.sa/dashboard/mycars/${car.id}`}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:bg-[var(--bg-muted)] text-[var(--fg)] text-xs font-bold transition"
+            href={`https://www.dasm.com.sa/dashboard/mycars?decide=${car.id}`}
+            className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[var(--accent-orange)] hover:opacity-90 text-white text-xs font-bold transition"
           >
-            <Pencil className="w-3.5 h-3.5" />
-            تعديل
+            <Compass className="w-3.5 h-3.5" />
+            قرّر الوجهة
           </a>
+
+          <div className="flex gap-2">
+            {inSouq && car.destinations.souq_listing.listing_id && (
+              <a
+                href={`/listings/${car.destinations.souq_listing.listing_id}`}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white text-xs font-bold transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                عرض البطاقة
+              </a>
+            )}
+            <a
+              href={`https://www.dasm.com.sa/dashboard/mycars/${car.id}`}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:bg-[var(--bg-muted)] text-[var(--fg)] text-xs font-bold transition"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              تعديل
+            </a>
+          </div>
         </div>
       </div>
     </div>

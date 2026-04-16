@@ -118,11 +118,14 @@ export default function PublishForm({ sections, regions, userName }: Props) {
   // Cars (and specialized vehicles) live in Core's `cars` table — that is the
   // source of truth the dashboard, the auctions engine, and every other DASM
   // surface read from. Souq must not create a parallel "car" record. Instead
-  // we send the seller to the canonical add-car form on dasm.com.sa, then the
-  // dashboard becomes the place to decide: publish as listing / push to
-  // auction / both. This keeps a single source of truth and matches the
-  // ecosystem map (Core owns the entity, Services owns the display card).
-  const CORE_ADD_CAR_URL = "https://www.dasm.com.sa/dashboard/add-car";
+  // we send the seller to the canonical add-car form on dasm.com.sa with a
+  // ?return param so they bounce straight back to /me on souq after save —
+  // the destination decision (إعلان / مزاد / الاثنين) lives later, on the
+  // car card. This keeps a single source of truth and a single user space.
+  const CORE_ADD_CAR_URL =
+    "https://www.dasm.com.sa/dashboard/add-car" +
+    "?return=" + encodeURIComponent("https://souq.dasm.com.sa/me") +
+    "&source=souq";
 
   // ─── Remember-last: load on mount ────────────────────────────────
   const hasLoadedStorage = useRef(false);
