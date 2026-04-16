@@ -9,13 +9,9 @@ interface Props {
 export default function CategoriesGrid({ sections, error }: Props) {
   return (
     <section id="categories" className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-      {/* Section header */}
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold mb-1">تصفّح حسب القسم</h2>
-          <p className="text-sm text-[var(--fg-muted)]">اختر القسم الذي يناسبك واستكشف آلاف الإعلانات.</p>
-        </div>
-      </div>
+      {/* Section header removed 2026-04-16 — owner felt the
+          "تصفّح حسب القسم" title + subtitle were filler copy now
+          that the categories are the first thing on the page. */}
 
       {error && (
         <div className="rounded-2xl border border-red-300 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 text-sm">
