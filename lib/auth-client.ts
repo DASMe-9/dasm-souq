@@ -203,14 +203,25 @@ export async function fetchCurrentUser(): Promise<User | null> {
     const token = getStoredToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
+    // credentials: "omit" — see ImageUploader for the full rationale. In
+    // short: sending cookies + Origin from a subdomain listed in
+    // SANCTUM_STATEFUL_DOMAINS flips Sanctum into stateful/CSRF mode and
+    // can reject otherwise-valid Bearer requests. For authenticated
+    // read calls, Bearer-only is the clean path.
     const res = await fetch(`${API_URL}/user`, {
-      credentials: "include",
+      credentials: "omit",
       headers,
       cache: "no-store",
     });
     if (!res.ok) return null;
-    const data = await res.json().catch(() => null);
-    return data?.id ? (data as User) : null;
+    const body = await res.json().catch(() => null);
+    if (!body) return null;
+    // /api/user returns either a flat user or a wrapped { success, data }
+    // envelope — accept both.
+    const user = ("id" in (body as object)
+      ? body
+      : (body as { data?: User }).data) as User | undefined;
+    return user?.id ? user : null;
   } catch {
     return null;
   }
@@ -221,9 +232,11 @@ export async function logoutUser(): Promise<void> {
     const headers: Record<string, string> = { Accept: "application/json" };
     const token = getStoredToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
+    // Bearer-only here too (see fetchCurrentUser / ImageUploader).
+    // Sanctum's logout endpoint revokes whichever token was used to auth.
     await fetch(`${API_URL}/logout`, {
       method: "POST",
-      credentials: "include",
+      credentials: "omit",
       headers,
     });
   } catch {
