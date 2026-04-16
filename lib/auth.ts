@@ -29,12 +29,19 @@ export interface CoreUser {
 export async function getAuthenticatedUser(): Promise<CoreUser | null> {
   try {
     const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
+    const all = cookieStore.getAll();
+    const cookieHeader = all
       .map((c) => `${c.name}=${c.value}`)
       .join("; ");
 
-    if (!cookieHeader) return null;
+    // Prefer Bearer token when available — it survives stateless deploys and
+    // does not require the origin to be in Sanctum's stateful list.
+    const tokenCookie = all.find((c) => c.name === "dasm_token");
+    const bearer = tokenCookie?.value
+      ? decodeURIComponent(tokenCookie.value)
+      : null;
+
+    if (!cookieHeader && !bearer) return null;
 
     const h = await headers();
     const forwardedFor = h.get("x-forwarded-for");
@@ -43,7 +50,8 @@ export async function getAuthenticatedUser(): Promise<CoreUser | null> {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Cookie: cookieHeader,
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
         Origin: "https://souq.dasm.com.sa",
         ...(forwardedFor ? { "X-Forwarded-For": forwardedFor } : {}),
       },
