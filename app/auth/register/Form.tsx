@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, UserPlus } from "lucide-react";
 import { registerUser } from "@/lib/auth-client";
 
 export default function RegisterForm({ returnUrl }: { returnUrl: string }) {
-  const router = useRouter();
+  const errorRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -43,13 +42,19 @@ export default function RegisterForm({ returnUrl }: { returnUrl: string }) {
         setLoading(false);
         return;
       }
-      router.push(returnUrl);
-      router.refresh();
+      // Hard-navigate so SSR re-evaluates with the fresh cookies (same
+      // reasoning as the login form).
+      if (typeof window !== "undefined") {
+        window.location.replace(returnUrl || "/");
+      }
       return;
     }
 
     setError(result.error || "تعذّر إنشاء الحساب.");
     setLoading(false);
+    requestAnimationFrame(() => {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   if (needsVerification) {
@@ -89,7 +94,9 @@ export default function RegisterForm({ returnUrl }: { returnUrl: string }) {
 
       {error && (
         <div
+          ref={errorRef}
           role="alert"
+          aria-live="polite"
           className="mb-4 flex gap-2 items-start p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-sm"
         >
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
