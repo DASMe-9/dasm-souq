@@ -24,21 +24,12 @@ export default function Hero() {
               سيارات، عقار، أجهزة، ومنتجات السوق السعودي — مع محادثة مدمجة، مزادات حيّة، وإجراءات بيع رسمية.
             </p>
 
-            {/* CTA buttons */}
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <a
-                href="#categories"
-                className="inline-flex items-center gap-2 h-12 px-6 rounded-2xl bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white font-bold shadow-lg shadow-[var(--brand-600)]/20 transition"
-              >
-                تصفّح الأقسام
-              </a>
-              <a
-                href="https://www.dasm.com.sa/dashboard"
-                className="inline-flex items-center gap-2 h-12 px-6 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--brand-600)] text-[var(--fg)] font-bold transition"
-              >
-                ابدأ بإعلان
-              </a>
-            </div>
+            {/* CTAs 'تصفّح الأقسام' + 'ابدأ بإعلان' were removed on
+                2026-04-16 per owner request. Reasoning: the Header bar
+                already exposes 'أضف إعلان' (primary) + 'بحث' + the
+                categories appear right below the hero as a full grid,
+                so the hero buttons were duplicating both the header
+                and the section beneath them. Less is more. */}
           </div>
 
           {/* Feature cards */}
