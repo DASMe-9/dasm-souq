@@ -146,6 +146,14 @@ export default function Header() {
                         </div>
                       )}
                     </div>
+                    <a
+                      href="/me"
+                      onClick={() => setAccountOpen(false)}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition border-b border-[var(--border)]"
+                    >
+                      <User className="w-4 h-4" />
+                      مساحتي
+                    </a>
                     <button
                       onClick={() => {
                         setAccountOpen(false);
