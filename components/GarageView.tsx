@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { GarageData, GarageCar } from "@/lib/garage";
 import DecideDestinationModal from "@/components/DecideDestinationModal";
+import EditCarModal from "@/components/EditCarModal";
 
 interface Props {
   garage: GarageData | null;
@@ -22,10 +23,11 @@ interface Props {
 }
 
 export default function GarageView({ garage }: Props) {
-  // Lift the decide-modal state so it lives ABOVE the cards. The modal opens
-  // INSIDE souq (no navigation) and posts directly to api.dasm.com.sa using
-  // the user's Bearer token.
+  // Lift the modals so they live ABOVE the cards. Both open INSIDE souq
+  // (no navigation) and post directly to api.dasm.com.sa using the user's
+  // Bearer token.
   const [decideCar, setDecideCar] = useState<GarageCar | null>(null);
+  const [editCar, setEditCar] = useState<GarageCar | null>(null);
 
   if (!garage) {
     return (
@@ -47,7 +49,12 @@ export default function GarageView({ garage }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {garage.cars.map((car) => (
-          <CarCard key={car.id} car={car} onDecide={() => setDecideCar(car)} />
+          <CarCard
+            key={car.id}
+            car={car}
+            onDecide={() => setDecideCar(car)}
+            onEdit={() => setEditCar(car)}
+          />
         ))}
       </div>
 
@@ -58,7 +65,16 @@ export default function GarageView({ garage }: Props) {
           prefillPrices={{ fixed_price: decideCar.price ?? null }}
           onClose={() => setDecideCar(null)}
           onSuccess={() => {
-            // Reload to reflect the new destination state.
+            if (typeof window !== "undefined") window.location.reload();
+          }}
+        />
+      )}
+
+      {editCar && (
+        <EditCarModal
+          carId={editCar.id}
+          onClose={() => setEditCar(null)}
+          onSaved={() => {
             if (typeof window !== "undefined") window.location.reload();
           }}
         />
@@ -98,7 +114,15 @@ function SummaryStrip({ summary }: { summary: GarageData["summary"] }) {
 
 // ─── Single car card ───────────────────────────────────
 
-function CarCard({ car, onDecide }: { car: GarageCar; onDecide: () => void }) {
+function CarCard({
+  car,
+  onDecide,
+  onEdit,
+}: {
+  car: GarageCar;
+  onDecide: () => void;
+  onEdit: () => void;
+}) {
   const inSouq = car.destinations.souq_listing.active;
   const inAuction = car.destinations.auction.active;
   const priceLabel = car.price
@@ -207,13 +231,14 @@ function CarCard({ car, onDecide }: { car: GarageCar; onDecide: () => void }) {
                 عرض البطاقة
               </a>
             )}
-            <a
-              href={`https://www.dasm.com.sa/dashboard/mycars/${car.id}`}
+            <button
+              type="button"
+              onClick={onEdit}
               className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:bg-[var(--bg-muted)] text-[var(--fg)] text-xs font-bold transition"
             >
               <Pencil className="w-3.5 h-3.5" />
               تعديل
-            </a>
+            </button>
           </div>
         </div>
       </div>
