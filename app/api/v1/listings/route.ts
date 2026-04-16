@@ -1,16 +1,15 @@
 /**
- * GET /api/v1/listings — paginated public listings
+ * /api/v1/listings
  *
- * Query params:
- *   section, tag, area, q, minPrice, maxPrice, page, perPage, sort
- *
- * Consumed by:
- *   - souq.dasm.com.sa home page + section pages (server-side)
- *   - Future iOS/Android app (mobile)
- *   - Third-party integrations (read-only)
+ *   GET  — paginated public listings (filters: section, tag, area, q,
+ *          minPrice, maxPrice, page, perPage, sort)
+ *   POST — create a new listing (auth required: verified against Core
+ *          via Sanctum cookie forwarded to api.dasm.com.sa/api/user)
  */
 import { NextRequest, NextResponse } from "next/server";
 import { fetchListings } from "@/lib/listings";
+import { createAdminClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth";
 import type { ListingFilters } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +20,8 @@ function parseNumber(value: string | null): number | undefined {
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
 }
+
+// ─── GET ────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -50,9 +51,116 @@ export async function GET(req: NextRequest) {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ status: "error", message }, { status: 500 });
+  }
+}
+
+// ─── POST ───────────────────────────────────────────────────────
+
+interface CreateListingBody {
+  title: string;
+  section_id: number;
+  section_slug: string;
+  tag_slug?: string | null;
+  description?: string | null;
+  price?: number | null;
+  is_negotiable?: boolean;
+  area_code?: string | null;
+  city?: string | null;
+  images?: string[];
+  external_listable_type?: "Car" | "RealEstate" | "FarmAsset" | null;
+  external_listable_id?: number | null;
+  is_auctionable?: boolean;
+  requires_settlement?: boolean;
+}
+
+const SECTIONS_REQUIRING_SETTLEMENT = new Set(["showrooms", "specialized-cars", "real-estate"]);
+
+export async function POST(req: NextRequest) {
+  // 1. Authenticate via Core
+  const user = await getAuthenticatedUser();
+  if (!user) {
     return NextResponse.json(
-      { status: "error", message },
-      { status: 500 },
+      { status: "error", message: "يجب تسجيل الدخول على dasm.com.sa أولاً" },
+      { status: 401 },
     );
+  }
+
+  // 2. Parse + validate body
+  let body: CreateListingBody;
+  try {
+    body = (await req.json()) as CreateListingBody;
+  } catch {
+    return NextResponse.json(
+      { status: "error", message: "Invalid JSON body" },
+      { status: 400 },
+    );
+  }
+
+  const errors: string[] = [];
+  if (!body.title?.trim()) errors.push("العنوان مطلوب");
+  if (!body.section_id || !body.section_slug) errors.push("اختر القسم");
+  if (body.title && body.title.length > 200) errors.push("العنوان طويل جداً (حد أقصى 200 حرف)");
+  if (body.description && body.description.length > 5000)
+    errors.push("الوصف طويل جداً (حد أقصى 5000 حرف)");
+  if (body.price != null && (!Number.isFinite(body.price) || body.price < 0))
+    errors.push("السعر غير صالح");
+  if (body.images && !Array.isArray(body.images))
+    errors.push("صيغة الصور غير صحيحة");
+  if (body.images && body.images.length > 20)
+    errors.push("لا يمكن رفع أكثر من 20 صورة");
+
+  if (errors.length > 0) {
+    return NextResponse.json(
+      { status: "error", message: errors.join(". "), errors },
+      { status: 422 },
+    );
+  }
+
+  // 3. Auto-set requires_settlement for big-ticket sections
+  const requiresSettlement =
+    typeof body.requires_settlement === "boolean"
+      ? body.requires_settlement
+      : SECTIONS_REQUIRING_SETTLEMENT.has(body.section_slug);
+
+  // 4. Insert
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("marketplace_listings")
+      .insert({
+        external_user_id: user.id,
+        section_id: body.section_id,
+        section_slug: body.section_slug,
+        tag_slug: body.tag_slug ?? null,
+        title: body.title.trim(),
+        description: body.description?.trim() ?? null,
+        images: body.images ?? [],
+        price: body.price ?? null,
+        is_negotiable: body.is_negotiable ?? true,
+        currency: "SAR",
+        area_code: body.area_code ?? null,
+        city: body.city ?? null,
+        status: "active", // future: change to 'pending' when moderation queue is added
+        is_auctionable: body.is_auctionable ?? false,
+        requires_settlement: requiresSettlement,
+        external_listable_type: body.external_listable_type ?? null,
+        external_listable_id: body.external_listable_id ?? null,
+        published_at: new Date().toISOString(),
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { status: "error", message: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ status: "success", data }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ status: "error", message }, { status: 500 });
   }
 }
