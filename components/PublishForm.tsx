@@ -101,12 +101,12 @@ export default function PublishForm({
   const router = useRouter();
 
   // Pre-select section from the Haraj-style picker on /publish?type=<slug>.
-  // Falls back to "" when the slug is missing or inactive.
+  // The /api/marketplace/sections endpoint only returns active sections
+  // server-side, so an is_active field isn't present on the Section type
+  // used here — a slug match is sufficient.
   const initialSectionId = (() => {
     if (!initialSectionSlug) return "" as const;
-    const s = sections.find(
-      (x) => x.slug === initialSectionSlug && x.is_active,
-    );
+    const s = sections.find((x) => x.slug === initialSectionSlug);
     return s ? s.id : ("" as const);
   })();
 
