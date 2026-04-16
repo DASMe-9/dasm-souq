@@ -78,12 +78,13 @@ export default function Header() {
 
           {/* Right actions — desktop */}
           <div className="hidden md:flex items-center gap-2 mr-auto">
-            <button
+            <a
+              href="/publish"
               className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-[var(--accent-orange)] hover:opacity-90 text-white font-bold text-sm shadow-md transition"
             >
               <Plus className="w-4 h-4" />
               أضف إعلان
-            </button>
+            </a>
             <button className="w-10 h-10 rounded-xl hover:bg-[var(--bg-muted)] text-[var(--fg-muted)] grid place-items-center transition" title="الإشعارات">
               <Bell className="w-5 h-5" />
             </button>
@@ -119,10 +120,13 @@ export default function Header() {
         {/* Mobile menu drawer */}
         {mobileOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <button className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[var(--accent-orange)] text-white font-bold text-sm">
+            <a
+              href="/publish"
+              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[var(--accent-orange)] text-white font-bold text-sm"
+            >
               <Plus className="w-4 h-4" />
               أضف إعلانك مجاناً
-            </button>
+            </a>
             <div className="grid grid-cols-2 gap-2">
               <button className="h-10 rounded-xl border border-[var(--border)] text-sm font-semibold flex items-center justify-center gap-1.5">
                 <User className="w-4 h-4" /> دخول
