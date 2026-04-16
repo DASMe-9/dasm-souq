@@ -72,9 +72,14 @@ interface CreateListingBody {
   external_listable_id?: number | null;
   is_auctionable?: boolean;
   requires_settlement?: boolean;
+  condition?: "new" | "like_new" | "used" | "for_parts" | null;
+  vehicle_details?: Record<string, unknown> | null;
+  status?: "draft" | "active";
 }
 
 const SECTIONS_REQUIRING_SETTLEMENT = new Set(["showrooms", "specialized-cars", "real-estate"]);
+const ALLOWED_CONDITIONS = new Set(["new", "like_new", "used", "for_parts"]);
+const VEHICLE_SECTIONS = new Set(["showrooms", "specialized-cars"]);
 
 export async function POST(req: NextRequest) {
   // 1. Authenticate via Core
@@ -97,9 +102,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const isDraft = body.status === "draft";
   const errors: string[] = [];
-  if (!body.title?.trim()) errors.push("العنوان مطلوب");
+
+  // Drafts are lenient — only section is required (so we can key "my drafts"
+  // by section and come back to it). Title/price/images are optional for
+  // drafts but enforced on publish.
   if (!body.section_id || !body.section_slug) errors.push("اختر القسم");
+  if (!isDraft && !body.title?.trim()) errors.push("العنوان مطلوب");
   if (body.title && body.title.length > 200) errors.push("العنوان طويل جداً (حد أقصى 200 حرف)");
   if (body.description && body.description.length > 5000)
     errors.push("الوصف طويل جداً (حد أقصى 5000 حرف)");
@@ -109,6 +119,13 @@ export async function POST(req: NextRequest) {
     errors.push("صيغة الصور غير صحيحة");
   if (body.images && body.images.length > 20)
     errors.push("لا يمكن رفع أكثر من 20 صورة");
+  if (body.condition != null && !ALLOWED_CONDITIONS.has(body.condition))
+    errors.push("حالة المنتج غير صالحة");
+  if (
+    body.vehicle_details != null &&
+    (typeof body.vehicle_details !== "object" || Array.isArray(body.vehicle_details))
+  )
+    errors.push("تفاصيل المركبة غير صالحة");
 
   if (errors.length > 0) {
     return NextResponse.json(
@@ -133,7 +150,7 @@ export async function POST(req: NextRequest) {
         section_id: body.section_id,
         section_slug: body.section_slug,
         tag_slug: body.tag_slug ?? null,
-        title: body.title.trim(),
+        title: (body.title ?? "").trim() || (isDraft ? "(مسوّدة بدون عنوان)" : ""),
         description: body.description?.trim() ?? null,
         images: body.images ?? [],
         price: body.price ?? null,
@@ -141,12 +158,19 @@ export async function POST(req: NextRequest) {
         currency: "SAR",
         area_code: body.area_code ?? null,
         city: body.city ?? null,
-        status: "active", // future: change to 'pending' when moderation queue is added
+        status: isDraft ? "draft" : "active",
         is_auctionable: body.is_auctionable ?? false,
         requires_settlement: requiresSettlement,
         external_listable_type: body.external_listable_type ?? null,
         external_listable_id: body.external_listable_id ?? null,
-        published_at: new Date().toISOString(),
+        condition: body.condition ?? null,
+        // Only persist vehicle_details for sections where it makes sense.
+        // Other sections get {} so we never store unrelated JSON.
+        vehicle_details:
+          body.vehicle_details && VEHICLE_SECTIONS.has(body.section_slug)
+            ? body.vehicle_details
+            : {},
+        published_at: isDraft ? null : new Date().toISOString(),
       })
       .select("*")
       .single();
