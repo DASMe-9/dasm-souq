@@ -35,6 +35,9 @@ interface Props {
   sections: Section[];
   regions: Region[];
   userName: string;
+  /** Slug of the section to pre-select when /publish?type=<slug> is hit.
+   *  Ignored if it doesn't match an active section. */
+  initialSectionSlug?: string;
 }
 
 const MAX_IMAGES = 10;
@@ -89,10 +92,25 @@ interface StoredDraft {
   savedAt: string;
 }
 
-export default function PublishForm({ sections, regions, userName }: Props) {
+export default function PublishForm({
+  sections,
+  regions,
+  userName,
+  initialSectionSlug,
+}: Props) {
   const router = useRouter();
 
-  const [sectionId, setSectionId] = useState<number | "">("");
+  // Pre-select section from the Haraj-style picker on /publish?type=<slug>.
+  // Falls back to "" when the slug is missing or inactive.
+  const initialSectionId = (() => {
+    if (!initialSectionSlug) return "" as const;
+    const s = sections.find(
+      (x) => x.slug === initialSectionSlug && x.is_active,
+    );
+    return s ? s.id : ("" as const);
+  })();
+
+  const [sectionId, setSectionId] = useState<number | "">(initialSectionId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<string>("");
