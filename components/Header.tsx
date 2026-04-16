@@ -149,10 +149,26 @@ export default function Header() {
                     <a
                       href="/me"
                       onClick={() => setAccountOpen(false)}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition border-b border-[var(--border)]"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition"
                     >
                       <User className="w-4 h-4" />
                       مساحتي
+                    </a>
+                    <a
+                      href="/me/subscription"
+                      onClick={() => setAccountOpen(false)}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition"
+                    >
+                      <span className="w-4 h-4 inline-flex items-center justify-center text-[10px] rounded bg-[var(--brand-50)] text-[var(--brand-700)] font-bold">★</span>
+                      اشتراكاتي
+                    </a>
+                    <a
+                      href="/pricing"
+                      onClick={() => setAccountOpen(false)}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition border-b border-[var(--border)]"
+                    >
+                      <span className="w-4 h-4 inline-flex items-center justify-center text-[10px] rounded bg-[var(--brand-50)] text-[var(--brand-700)] font-bold">¤</span>
+                      الأسعار
                     </a>
                     <button
                       onClick={() => {
