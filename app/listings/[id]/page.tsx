@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { fetchListingById } from "@/lib/listings";
+import { buildListingJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetail from "@/components/ListingDetail";
@@ -41,8 +42,18 @@ export default async function ListingPage({
   const listing = await fetchListingById(id);
   if (!listing) notFound();
 
+  const jsonLd = buildListingJsonLd(listing);
+
   return (
     <>
+      {/* Schema.org Product / Vehicle structured data — Google rich
+          results for price, image, condition, and vehicle specs.
+          Haraj emits none; this is a cheap SEO differentiator. */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
       <ListingDetail listing={listing} />
       <Footer />
