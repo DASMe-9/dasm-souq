@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 import { fetchInspectionForListing, fetchListingById } from "@/lib/listings";
+import { getAuthenticatedUser } from "@/lib/auth";
 import { buildListingJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetail from "@/components/ListingDetail";
 
-export const revalidate = 60;
+// Owner-awareness needs the request-scoped Sanctum cookie, so this page
+// must render per-request. (Was 60s cache — incompatible with auth.)
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -39,8 +42,16 @@ export default async function ListingPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const listing = await fetchListingById(id);
+  const [listing, user] = await Promise.all([
+    fetchListingById(id),
+    getAuthenticatedUser(),
+  ]);
   if (!listing) notFound();
+
+  // Owner = the person who posted this listing. They get the seller panel
+  // (Decide destination modal wired to Core /api/cars/{id}/publish/*) and
+  // don't see the "bid / contact" buttons that are meant for shoppers.
+  const isOwner = user?.id != null && user.id === listing.external_user_id;
 
   // Verified inspection is a best-effort sidecar — never block the page.
   let inspection = null;
@@ -63,7 +74,7 @@ export default async function ListingPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
-      <ListingDetail listing={listing} inspection={inspection} />
+      <ListingDetail listing={listing} isOwner={isOwner} inspection={inspection} />
       <Footer />
     </>
   );
