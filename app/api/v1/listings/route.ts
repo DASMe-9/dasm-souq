@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchListings } from "@/lib/listings";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { notifyListingCreated } from "@/lib/talk-hook";
 import type { ListingFilters } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -180,6 +181,18 @@ export async function POST(req: NextRequest) {
         { status: "error", message: error.message },
         { status: 500 },
       );
+    }
+
+    // Open the DASM Talk conversation for active listings only. Drafts
+    // stay quiet — no point creating a conversation for something the
+    // buyer can't see. Fire-and-forget: hook failure never blocks the
+    // user's POST.
+    if (!isDraft && data?.id) {
+      void notifyListingCreated({
+        listingId: data.id,
+        sellerUserId: user.id,
+        title: data.title ?? null,
+      });
     }
 
     return NextResponse.json({ status: "success", data }, { status: 201 });

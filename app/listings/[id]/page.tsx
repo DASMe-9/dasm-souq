@@ -5,6 +5,7 @@ import { buildListingJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetail from "@/components/ListingDetail";
+import TalkListingContext from "@/components/TalkListingContext";
 
 // Owner-awareness needs the request-scoped Sanctum cookie, so this page
 // must render per-request. (Was 60s cache — incompatible with auth.)
@@ -74,6 +75,7 @@ export default async function ListingPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
+      <TalkListingContext listingId={listing.id} />
       <ListingDetail listing={listing} isOwner={isOwner} inspection={inspection} />
       <Footer />
     </>
