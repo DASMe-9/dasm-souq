@@ -69,3 +69,13 @@ export interface ListingsPage {
   perPage: number;
   hasMore: boolean;
 }
+
+/** Latest inspection report for a listing. Sourced from the
+ *  marketplace_inspection_reports table and surfaced publicly as a
+ *  "فحص موثّق" badge — one of the core differentiators vs. Haraj. */
+export interface InspectionSummary {
+  rating: number | null;
+  inspector_name: string | null;
+  inspected_at: string | null;
+  report_url: string | null;
+}

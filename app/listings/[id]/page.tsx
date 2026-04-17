@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchListingById } from "@/lib/listings";
+import { fetchInspectionForListing, fetchListingById } from "@/lib/listings";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetail from "@/components/ListingDetail";
@@ -41,10 +41,18 @@ export default async function ListingPage({
   const listing = await fetchListingById(id);
   if (!listing) notFound();
 
+  // Verified inspection is a best-effort sidecar — never block the page.
+  let inspection = null;
+  try {
+    inspection = await fetchInspectionForListing(id);
+  } catch {
+    inspection = null;
+  }
+
   return (
     <>
       <Header />
-      <ListingDetail listing={listing} />
+      <ListingDetail listing={listing} inspection={inspection} />
       <Footer />
     </>
   );
