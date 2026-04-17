@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { fetchListingById } from "@/lib/listings";
+import { fetchInspectionForListing, fetchListingById } from "@/lib/listings";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { buildListingJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetail from "@/components/ListingDetail";
@@ -52,10 +53,28 @@ export default async function ListingPage({
   // don't see the "bid / contact" buttons that are meant for shoppers.
   const isOwner = user?.id != null && user.id === listing.external_user_id;
 
+  // Verified inspection is a best-effort sidecar — never block the page.
+  let inspection = null;
+  try {
+    inspection = await fetchInspectionForListing(id);
+  } catch {
+    inspection = null;
+  }
+
+  const jsonLd = buildListingJsonLd(listing);
+
   return (
     <>
+      {/* Schema.org Product / Vehicle structured data — Google rich
+          results for price, image, condition, and vehicle specs.
+          Haraj emits none; this is a cheap SEO differentiator. */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
-      <ListingDetail listing={listing} isOwner={isOwner} />
+      <ListingDetail listing={listing} isOwner={isOwner} inspection={inspection} />
       <Footer />
     </>
   );

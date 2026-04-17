@@ -1,6 +1,6 @@
 import { Search, Inbox } from "lucide-react";
 import ListingCard, { toDisplay, type DisplayListing } from "@/components/ListingCard";
-import type { ListingsPage } from "@/lib/supabase/types";
+import type { InspectionSummary, ListingsPage } from "@/lib/supabase/types";
 
 /**
  * Server-rendered listings catalog. Used by:
@@ -29,6 +29,10 @@ interface Props {
   basePath: string;
   /** Hidden fields to preserve (section, tag, area, etc.) across filter changes */
   preserve?: Record<string, string | undefined>;
+  /** Optional map of listing_id → verified inspection summary. Rendered
+   *  as a badge on each card. Batch-fetched at the page level to keep
+   *  this component free of any data access. */
+  inspections?: Record<string, InspectionSummary>;
 }
 
 const SORT_LABELS: Record<NonNullable<FilterState["sort"]>, string> = {
@@ -45,8 +49,11 @@ export default function ListingsCatalog({
   filters,
   basePath,
   preserve = {},
+  inspections = {},
 }: Props) {
-  const items: DisplayListing[] = page.items.map(toDisplay);
+  const items: DisplayListing[] = page.items.map((l) =>
+    toDisplay(l, inspections[l.id]),
+  );
   const totalPages = Math.max(1, Math.ceil(page.total / page.perPage));
 
   return (

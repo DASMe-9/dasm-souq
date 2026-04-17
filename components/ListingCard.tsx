@@ -1,5 +1,6 @@
-import { Eye, Heart, MapPin, Gavel } from "lucide-react";
-import type { MarketplaceListing } from "@/lib/supabase/types";
+import { Eye, Heart, MapPin, Gavel, BadgeCheck, Clock } from "lucide-react";
+import type { InspectionSummary, MarketplaceListing } from "@/lib/supabase/types";
+import { formatRelativeArabic } from "@/lib/time";
 
 /**
  * Single listing card. Used in:
@@ -35,10 +36,19 @@ export interface DisplayListing {
   image: string;
   views: number;
   isAuctionable: boolean;
+  /** Present when a verified inspection report exists for this listing.
+   *  Surfaced as a compact "✅ فحص موثّق" badge. */
+  inspection?: InspectionSummary;
+  /** ISO timestamp used by the card to render a "قبل X" freshness label.
+   *  Prefer the publish time; fall back to last update. */
+  freshnessIso?: string | null;
   isDemo?: boolean;
 }
 
-export function toDisplay(l: MarketplaceListing): DisplayListing {
+export function toDisplay(
+  l: MarketplaceListing,
+  inspection?: InspectionSummary,
+): DisplayListing {
   return {
     id: l.id,
     title: l.title,
@@ -49,6 +59,8 @@ export function toDisplay(l: MarketplaceListing): DisplayListing {
       Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : FALLBACK_IMAGE,
     views: l.views_count ?? 0,
     isAuctionable: l.is_auctionable,
+    inspection,
+    freshnessIso: l.published_at ?? l.updated_at ?? l.created_at ?? null,
   };
 }
 
@@ -77,6 +89,22 @@ export default function ListingCard({ listing }: { listing: DisplayListing }) {
         <span className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black/60 text-white text-[10px] font-semibold backdrop-blur-sm">
           {listing.section}
         </span>
+        {listing.inspection && (
+          <span
+            className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-md"
+            title={
+              listing.inspection.rating != null
+                ? `فحص موثّق — تقييم ${listing.inspection.rating}/10`
+                : "فحص موثّق"
+            }
+          >
+            <BadgeCheck className="w-3 h-3" />
+            فحص موثّق
+            {listing.inspection.rating != null && (
+              <span className="tabular-nums">{listing.inspection.rating}/10</span>
+            )}
+          </span>
+        )}
       </a>
 
       <div className="p-3.5 space-y-2.5">
@@ -108,11 +136,18 @@ export default function ListingCard({ listing }: { listing: DisplayListing }) {
             <MapPin className="w-3 h-3" />
             {listing.city}
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 tabular-nums">
             <Eye className="w-3 h-3" />
-            {listing.views}
+            {listing.views.toLocaleString("ar-SA")}
           </span>
         </div>
+
+        {listing.freshnessIso && (
+          <div className="text-[10px] text-[var(--fg-soft)] inline-flex items-center gap-1">
+            <Clock className="w-2.5 h-2.5" />
+            {formatRelativeArabic(listing.freshnessIso)}
+          </div>
+        )}
 
         {listing.isAuctionable && (
           <div className="pt-1">

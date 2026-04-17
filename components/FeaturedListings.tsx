@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { fetchListings } from "@/lib/listings";
+import { fetchInspectionsForListings, fetchListings } from "@/lib/listings";
 import ListingCard, {
   toDisplay,
   type DisplayListing,
@@ -74,7 +74,18 @@ export default async function FeaturedListings() {
   try {
     const page = await fetchListings({ perPage: 8, sort: "latest" });
     if (page.items.length > 0) {
-      listings = page.items.map(toDisplay);
+      // Best-effort inspection lookup. A failure here shouldn't hide the
+      // whole strip — just skip the badges. (e.g. missing service-role
+      // key in a preview deploy.)
+      let inspections: Awaited<ReturnType<typeof fetchInspectionsForListings>> = {};
+      try {
+        inspections = await fetchInspectionsForListings(
+          page.items.map((l) => l.id),
+        );
+      } catch {
+        inspections = {};
+      }
+      listings = page.items.map((l) => toDisplay(l, inspections[l.id]));
     } else {
       listings = DEMO_LISTINGS;
       usingDemo = true;
