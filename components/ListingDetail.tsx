@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { MarketplaceListing } from "@/lib/supabase/types";
+import { formatRelativeArabic } from "@/lib/time";
 
 const SECTION_LABELS: Record<string, string> = {
   showrooms: "معارض السيارات",
@@ -119,10 +120,17 @@ export default function ListingDetail({ listing }: Props) {
                 <Eye className="w-4 h-4" />
                 {listing.views_count} مشاهدة
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-flex items-center gap-1.5"
+                title={
+                  listing.published_at
+                    ? new Date(listing.published_at).toLocaleString("ar-SA")
+                    : undefined
+                }
+              >
                 <Calendar className="w-4 h-4" />
                 {listing.published_at
-                  ? new Date(listing.published_at).toLocaleDateString("ar-SA")
+                  ? formatRelativeArabic(listing.published_at)
                   : "—"}
               </span>
             </div>
