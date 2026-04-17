@@ -2,8 +2,9 @@
  * Listing data-access layer — server-side only.
  * Wraps Supabase queries with typed responses + filtering logic.
  */
-import { createPublicServerClient } from "@/lib/supabase/server";
+import { createAdminClient, createPublicServerClient } from "@/lib/supabase/server";
 import type {
+  InspectionSummary,
   ListingFilters,
   ListingsPage,
   MarketplaceListing,
@@ -83,4 +84,55 @@ export async function fetchFeaturedListings(
     .limit(limit);
   if (error) throw error;
   return (data ?? []) as MarketplaceListing[];
+}
+
+/**
+ * Fetch the most-recent inspection summary for a batch of listing ids.
+ * Returns a map keyed by listing_id — listings without any report are
+ * simply absent from the map.
+ *
+ * Uses the admin (service-role) client because inspection_reports is
+ * marked service-only in the schema migration. The caller is trusted
+ * (server component / route handler) and only a narrow whitelist of
+ * public fields is projected — nothing sensitive is exposed.
+ */
+export async function fetchInspectionsForListings(
+  listingIds: string[],
+): Promise<Record<string, InspectionSummary>> {
+  if (listingIds.length === 0) return {};
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("marketplace_inspection_reports")
+    .select("listing_id, rating, inspector_name, inspected_at, report_url")
+    .in("listing_id", listingIds)
+    .order("inspected_at", { ascending: false, nullsFirst: false });
+  if (error) throw error;
+
+  const map: Record<string, InspectionSummary> = {};
+  for (const row of (data ?? []) as Array<{
+    listing_id: string;
+    rating: number | null;
+    inspector_name: string | null;
+    inspected_at: string | null;
+    report_url: string | null;
+  }>) {
+    // First row per listing_id wins — ordered newest-first above.
+    if (!map[row.listing_id]) {
+      map[row.listing_id] = {
+        rating: row.rating,
+        inspector_name: row.inspector_name,
+        inspected_at: row.inspected_at,
+        report_url: row.report_url,
+      };
+    }
+  }
+  return map;
+}
+
+/** Single-listing variant — a thin convenience wrapper for detail pages. */
+export async function fetchInspectionForListing(
+  listingId: string,
+): Promise<InspectionSummary | null> {
+  const map = await fetchInspectionsForListings([listingId]);
+  return map[listingId] ?? null;
 }

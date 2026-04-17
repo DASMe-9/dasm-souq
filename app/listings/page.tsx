@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingsCatalog from "@/components/ListingsCatalog";
-import { fetchListings } from "@/lib/listings";
-import type { ListingFilters, ListingsPage } from "@/lib/supabase/types";
+import { fetchInspectionsForListings, fetchListings } from "@/lib/listings";
+import type { InspectionSummary, ListingFilters, ListingsPage } from "@/lib/supabase/types";
 
 /**
  * /listings — full public catalog of every active listing across the
@@ -71,6 +71,19 @@ export default async function AllListingsPage({
     page = { items: [], total: 0, page: 1, perPage: filters.perPage ?? 24, hasMore: false };
   }
 
+  // Batch-load verified inspection badges. Swallow errors so a missing
+  // service-role key or a momentary blip never hides the catalog.
+  let inspections: Record<string, InspectionSummary> = {};
+  if (page.items.length > 0) {
+    try {
+      inspections = await fetchInspectionsForListings(
+        page.items.map((l) => l.id),
+      );
+    } catch {
+      inspections = {};
+    }
+  }
+
   return (
     <>
       <Header />
@@ -97,6 +110,7 @@ export default async function AllListingsPage({
           }}
           basePath="/listings"
           preserve={{ section: filters.section, tag: filters.tag, area: filters.area }}
+          inspections={inspections}
         />
       </main>
       <Footer />

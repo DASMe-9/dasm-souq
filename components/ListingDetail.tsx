@@ -12,8 +12,10 @@ import {
   Calendar,
   Tag,
   ShieldCheck,
+  BadgeCheck,
+  ExternalLink,
 } from "lucide-react";
-import type { MarketplaceListing } from "@/lib/supabase/types";
+import type { InspectionSummary, MarketplaceListing } from "@/lib/supabase/types";
 import { formatRelativeArabic } from "@/lib/time";
 
 const SECTION_LABELS: Record<string, string> = {
@@ -29,9 +31,12 @@ const SECTION_LABELS: Record<string, string> = {
 
 interface Props {
   listing: MarketplaceListing;
+  /** Most-recent verified inspection report for this listing, if any.
+   *  Rendered as a prominent trust block above the description. */
+  inspection?: InspectionSummary | null;
 }
 
-export default function ListingDetail({ listing }: Props) {
+export default function ListingDetail({ listing, inspection }: Props) {
   const images =
     Array.isArray(listing.images) && listing.images.length > 0
       ? listing.images
@@ -152,6 +157,52 @@ export default function ListingDetail({ listing }: Props) {
               </div>
             )}
           </div>
+
+          {/* Verified inspection — a DASM differentiator vs. Haraj-style ads */}
+          {inspection && (
+            <div className="rounded-2xl p-4 bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800">
+              <div className="flex items-start gap-3">
+                <BadgeCheck className="w-5 h-5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-sm text-emerald-900 dark:text-emerald-200">
+                      فحص موثّق
+                    </p>
+                    {inspection.rating != null && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold tabular-nums">
+                        {inspection.rating}/10
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-emerald-900/80 dark:text-emerald-200/80 mt-1 space-y-0.5">
+                    {inspection.inspector_name && (
+                      <p>
+                        المفحوص من قِبل:{" "}
+                        <span className="font-semibold">{inspection.inspector_name}</span>
+                      </p>
+                    )}
+                    {inspection.inspected_at && (
+                      <p>
+                        تاريخ الفحص:{" "}
+                        {new Date(inspection.inspected_at).toLocaleDateString("ar-SA")}
+                      </p>
+                    )}
+                  </div>
+                  {inspection.report_url && (
+                    <a
+                      href={inspection.report_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                    >
+                      عرض تقرير الفحص الكامل
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Safety hints */}
           <div className="rounded-2xl p-4 bg-[var(--brand-50)] border border-[var(--brand-200)]">

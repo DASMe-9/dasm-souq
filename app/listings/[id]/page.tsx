@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchListingById } from "@/lib/listings";
+import { fetchInspectionForListing, fetchListingById } from "@/lib/listings";
 import { buildListingJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -42,6 +42,14 @@ export default async function ListingPage({
   const listing = await fetchListingById(id);
   if (!listing) notFound();
 
+  // Verified inspection is a best-effort sidecar — never block the page.
+  let inspection = null;
+  try {
+    inspection = await fetchInspectionForListing(id);
+  } catch {
+    inspection = null;
+  }
+
   const jsonLd = buildListingJsonLd(listing);
 
   return (
@@ -55,7 +63,7 @@ export default async function ListingPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
-      <ListingDetail listing={listing} />
+      <ListingDetail listing={listing} inspection={inspection} />
       <Footer />
     </>
   );
