@@ -12,8 +12,11 @@ import {
   Calendar,
   Tag,
   ShieldCheck,
+  Settings2,
+  Pencil,
 } from "lucide-react";
 import type { MarketplaceListing } from "@/lib/supabase/types";
+import DecideDestinationModal from "@/components/DecideDestinationModal";
 
 const SECTION_LABELS: Record<string, string> = {
   showrooms: "معارض السيارات",
@@ -28,9 +31,13 @@ const SECTION_LABELS: Record<string, string> = {
 
 interface Props {
   listing: MarketplaceListing;
+  /** True when the current Sanctum-authenticated viewer is the user who
+   *  posted this listing. Swaps the bid/contact panel for a seller panel
+   *  that opens DecideDestinationModal. */
+  isOwner?: boolean;
 }
 
-export default function ListingDetail({ listing }: Props) {
+export default function ListingDetail({ listing, isOwner = false }: Props) {
   const images =
     Array.isArray(listing.images) && listing.images.length > 0
       ? listing.images
@@ -38,6 +45,16 @@ export default function ListingDetail({ listing }: Props) {
           "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=1200&q=80",
         ];
   const [active, setActive] = useState(0);
+  const [decideOpen, setDecideOpen] = useState(false);
+
+  // Seller controls only make sense when the listing is backed by a Core
+  // Car (classified→auction move goes through /api/cars/{id}/publish/*).
+  // Non-car listings (electronics, real-estate, …) aren't auctionable yet,
+  // so we hide the destination panel for them even if isOwner is true.
+  const canManageDestination =
+    isOwner &&
+    listing.external_listable_type === "Car" &&
+    listing.external_listable_id != null;
   const section = SECTION_LABELS[listing.section_slug] ?? listing.section_slug;
   const priceLabel = listing.price
     ? Number(listing.price).toLocaleString("ar-SA")
@@ -180,71 +197,124 @@ export default function ListingDetail({ listing }: Props) {
                 <p className="text-lg font-bold text-[var(--fg-muted)] mb-4">السعر عند الطلب</p>
               )}
 
-              {/* 3 action buttons — the DASM Souq signature */}
-              <div className="space-y-2">
-                {listing.is_auctionable && (
-                  <button className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-[var(--accent-orange)] hover:opacity-90 text-white font-bold shadow-md transition">
-                    <Gavel className="w-4 h-4" />
-                    قدّم مزايدة
-                  </button>
-                )}
+              {isOwner ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1 px-2 py-1.5 rounded-lg bg-[var(--brand-50)] border border-[var(--brand-200)]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[var(--brand-700)] shrink-0" />
+                    <span className="text-[11px] font-bold text-[var(--brand-800)]">
+                      هذا إعلانك — أنت تتحكم فيه
+                    </span>
+                  </div>
 
-                <button
-                  className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white font-bold shadow-md transition"
-                  data-dasm-talk="open"
-                  data-dasm-talk-entity-type="marketplace_listing"
-                  data-dasm-talk-entity-id={listing.id}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  ابدأ محادثة مع البائع
-                </button>
+                  {canManageDestination && (
+                    <button
+                      onClick={() => setDecideOpen(true)}
+                      className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white font-bold shadow-md transition"
+                    >
+                      <Settings2 className="w-4 h-4" />
+                      إدارة الوجهة (سوق داسم / مزاد)
+                    </button>
+                  )}
 
-                {listing.requires_settlement && (
-                  <button className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)] hover:text-white text-[var(--accent-blue)] font-bold border border-[var(--accent-blue)]/30 transition">
-                    <FileCheck className="w-4 h-4" />
-                    بدء الإجراءات الرسمية
-                  </button>
-                )}
-              </div>
+                  <a
+                    href="/me"
+                    className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[var(--bg-muted)] hover:bg-[var(--border-soft)] text-[var(--fg)] font-bold border border-[var(--border)] transition"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    افتح مساحتي للتحرير
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {listing.is_auctionable && (
+                      <button className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-[var(--accent-orange)] hover:opacity-90 text-white font-bold shadow-md transition">
+                        <Gavel className="w-4 h-4" />
+                        قدّم مزايدة
+                      </button>
+                    )}
 
-              {/* Secondary */}
-              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--border-soft)]">
-                <button className="inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:border-[var(--brand-600)] hover:text-[var(--brand-700)] text-xs font-semibold transition">
-                  <Heart className="w-3.5 h-3.5" />
-                  حفظ
-                </button>
-                <button className="inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:border-[var(--brand-600)] hover:text-[var(--brand-700)] text-xs font-semibold transition">
-                  <Share2 className="w-3.5 h-3.5" />
-                  مشاركة
-                </button>
-              </div>
+                    <button
+                      className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-[var(--brand-600)] hover:bg-[var(--brand-700)] text-white font-bold shadow-md transition"
+                      data-dasm-talk="open"
+                      data-dasm-talk-entity-type="marketplace_listing"
+                      data-dasm-talk-entity-id={listing.id}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      ابدأ محادثة مع البائع
+                    </button>
+
+                    {listing.requires_settlement && (
+                      <button className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)] hover:text-white text-[var(--accent-blue)] font-bold border border-[var(--accent-blue)]/30 transition">
+                        <FileCheck className="w-4 h-4" />
+                        بدء الإجراءات الرسمية
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--border-soft)]">
+                    <button className="inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:border-[var(--brand-600)] hover:text-[var(--brand-700)] text-xs font-semibold transition">
+                      <Heart className="w-3.5 h-3.5" />
+                      حفظ
+                    </button>
+                    <button className="inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[var(--border)] hover:border-[var(--brand-600)] hover:text-[var(--brand-700)] text-xs font-semibold transition">
+                      <Share2 className="w-3.5 h-3.5" />
+                      مشاركة
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Seller snippet */}
-            <div className="rounded-2xl p-4 bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--brand-500)] to-[var(--brand-700)] grid place-items-center text-white font-extrabold">
-                  ب
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm">بائع سوق داسم</div>
-                  <div className="text-xs text-[var(--fg-muted)]">
-                    مُسجَّل في منصة داسم
+            {!isOwner && (
+              <div className="rounded-2xl p-4 bg-[var(--bg-card)] border border-[var(--border)]">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--brand-500)] to-[var(--brand-700)] grid place-items-center text-white font-extrabold">
+                    ب
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm">بائع سوق داسم</div>
+                    <div className="text-xs text-[var(--fg-muted)]">
+                      مُسجَّل في منصة داسم
+                    </div>
                   </div>
                 </div>
+                <a
+                  href={`https://www.dasm.com.sa/users/${listing.external_user_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block mt-3 text-center text-xs font-bold text-[var(--brand-700)] hover:underline"
+                >
+                  عرض الملف الشخصي ←
+                </a>
               </div>
-              <a
-                href={`https://www.dasm.com.sa/users/${listing.external_user_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block mt-3 text-center text-xs font-bold text-[var(--brand-700)] hover:underline"
-              >
-                عرض الملف الشخصي ←
-              </a>
-            </div>
+            )}
           </div>
         </div>
       </div>
+
+      {decideOpen && canManageDestination && (
+        <DecideDestinationModal
+          carId={listing.external_listable_id as number}
+          carLabel={listing.title}
+          prefillPrices={{ fixed_price: listing.price }}
+          currentState={{
+            inSouq: listing.status === "active" && !listing.is_auctionable,
+            inAuction: listing.is_auctionable,
+            souqListingId: listing.id,
+            souqViews: listing.views_count,
+            souqFavorites: listing.favorites_count,
+            souqPublishedAt: listing.published_at,
+          }}
+          onClose={() => setDecideOpen(false)}
+          onSuccess={() => {
+            setDecideOpen(false);
+            // Core is source of truth; reload so Services-DB listing
+            // reflects the new listing_type/auction_status on next fetch.
+            if (typeof window !== "undefined") window.location.reload();
+          }}
+        />
+      )}
     </main>
   );
 }
