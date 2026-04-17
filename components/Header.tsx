@@ -15,6 +15,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { useAuthSession } from "@/components/AuthSession";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 
 const POPULAR_CITIES = ["كل المناطق", "الرياض", "جدة", "الدمام", "مكة", "المدينة", "أبها", "الطائف", "بريدة"];
 
@@ -165,17 +166,20 @@ export default function Header() {
                     <a
                       href="/pricing"
                       onClick={() => setAccountOpen(false)}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition border-b border-[var(--border)]"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition"
                     >
                       <span className="w-4 h-4 inline-flex items-center justify-center text-[10px] rounded bg-[var(--brand-50)] text-[var(--brand-700)] font-bold">¤</span>
                       الأسعار
                     </a>
+                    <div className="border-t border-[var(--border)]">
+                      <ThemeSwitcher />
+                    </div>
                     <button
                       onClick={() => {
                         setAccountOpen(false);
                         void logout();
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-right hover:bg-[var(--bg-muted)] text-[var(--fg)] transition border-t border-[var(--border)]"
                     >
                       <LogOut className="w-4 h-4" />
                       تسجيل الخروج

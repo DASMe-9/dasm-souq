@@ -42,8 +42,29 @@
   --shadow-glow: 0 0 0 3px rgba(16,185,129,0.15);
 }
 
+/* ────────────────────────────────────────────────
+   Theme overrides — three modes, Vercel-style.
+   Resolution is driven by the inline script in layout.tsx,
+   which sets data-theme="light" or "dark" on <html> based on
+   localStorage. "system" is represented by the attribute
+   simply being absent → we fall back to prefers-color-scheme.
+   ──────────────────────────────────────────────── */
+
+/* Explicit dark — chosen by user */
+html[data-theme="dark"] {
+  --bg:        #09090b;
+  --bg-card:   #18181b;
+  --bg-muted:  #27272a;
+  --fg:        #fafafa;
+  --fg-muted:  #a1a1aa;
+  --fg-soft:   #71717a;
+  --border:    #27272a;
+  --border-soft: #1f1f23;
+}
+
+/* System-default dark — user chose "system" AND OS is dark */
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not([data-theme="light"]):not([data-theme="dark"]) {
     --bg:        #09090b;
     --bg-card:   #18181b;
     --bg-muted:  #27272a;
@@ -89,8 +110,11 @@ body {
   -webkit-backdrop-filter: blur(12px);
   background: rgba(255,255,255,0.85);
 }
+html[data-theme="dark"] .glass { background: rgba(24,24,27,0.85); }
 @media (prefers-color-scheme: dark) {
-  .glass { background: rgba(24,24,27,0.85); }
+  html:not([data-theme="light"]):not([data-theme="dark"]) .glass {
+    background: rgba(24,24,27,0.85);
+  }
 }
 
 /* Subtle pulse for live indicators */

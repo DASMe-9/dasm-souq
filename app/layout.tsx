@@ -42,6 +42,19 @@ export default async function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
+        {/*
+         * Theme resolver — runs before paint to prevent FOUC (flash of
+         * wrong theme). Reads the user's choice from localStorage:
+         *   "light" / "dark" → set data-theme explicitly
+         *   "system" or absent → leave attribute off; CSS falls back
+         *     to prefers-color-scheme.
+         * The try/catch covers private mode + disabled storage.
+         */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('dasm-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}`,
+          }}
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
           rel="stylesheet"
