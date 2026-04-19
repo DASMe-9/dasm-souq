@@ -20,6 +20,7 @@ import {
 import type { InspectionSummary, MarketplaceListing } from "@/lib/supabase/types";
 import { formatRelativeArabic } from "@/lib/time";
 import DecideDestinationModal from "@/components/DecideDestinationModal";
+import LiveStreamBanner from "@/components/LiveStreamBanner";
 
 const SECTION_LABELS: Record<string, string> = {
   showrooms: "معارض السيارات",
@@ -97,6 +98,14 @@ export default function ListingDetail({
         <span>›</span>
         <span className="truncate text-[var(--fg-soft)]">{listing.title}</span>
       </nav>
+
+      {/* Live broadcast banner — shown ONLY when this car is currently
+          on screen in a live stream broadcast. Renders nothing otherwise,
+          so the layout stays unchanged for the 99% non-live case. */}
+      {listing.external_listable_type === "Car" &&
+        listing.external_listable_id != null && (
+          <LiveStreamBanner carId={listing.external_listable_id} />
+        )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* LEFT — gallery + details (2 cols) */}
