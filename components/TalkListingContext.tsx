@@ -11,6 +11,13 @@ import { useEffect } from "react";
  * open and on the `dasm-talk:update` custom event, so SPA navigation between
  * listing pages routes the user to the correct conversation without a full
  * page reload.
+ *
+ * mode "text+voice" enables the LiveKit voice room overlay (dasm-talk#10)
+ * so a buyer can call the seller from inside the chat panel — both join
+ * the same room (room name = "listing:{id}").
+ *
+ * role "participant" gives mic-publish capability without admin grants;
+ * the server enforces it. Either party can invite the other to talk.
  */
 export default function TalkListingContext({ listingId }: { listingId: string | number }) {
   useEffect(() => {
@@ -19,6 +26,8 @@ export default function TalkListingContext({ listingId }: { listingId: string | 
       ...prev,
       entity_type: "listing",
       entity_id: String(listingId),
+      mode: "text+voice",
+      role: "participant",
     };
     window.dispatchEvent(new CustomEvent("dasm-talk:update"));
 
@@ -28,12 +37,16 @@ export default function TalkListingContext({ listingId }: { listingId: string | 
       // unrelated keys (position, user_token) intact.
       const current =
         (window as unknown as { DASM_TALK?: Record<string, unknown> }).DASM_TALK ?? {};
-      const { entity_type: _t, entity_id: _i, ...rest } = current as {
+      const { entity_type: _t, entity_id: _i, mode: _m, role: _r, ...rest } = current as {
         entity_type?: unknown;
         entity_id?: unknown;
+        mode?: unknown;
+        role?: unknown;
       };
       void _t;
       void _i;
+      void _m;
+      void _r;
       (window as unknown as { DASM_TALK?: Record<string, unknown> }).DASM_TALK = rest;
       window.dispatchEvent(new CustomEvent("dasm-talk:update"));
     };
