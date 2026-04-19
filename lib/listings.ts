@@ -74,6 +74,28 @@ export async function fetchListingById(
   return (data as MarketplaceListing) ?? null;
 }
 
+/**
+ * Resolve the most recent active souq listing for a given Core car id.
+ * Used by /cars/{id} to redirect from a stream-side deep-link to the
+ * actual listing page. Returns null if the car has no active listing.
+ */
+export async function fetchListingByCarId(
+  carId: number,
+): Promise<MarketplaceListing | null> {
+  const supabase = createPublicServerClient();
+  const { data, error } = await supabase
+    .from("marketplace_listings")
+    .select("*")
+    .eq("external_listable_type", "Car")
+    .eq("external_listable_id", carId)
+    .eq("status", "active")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as MarketplaceListing) ?? null;
+}
+
 export async function fetchFeaturedListings(
   limit = 8,
 ): Promise<MarketplaceListing[]> {
